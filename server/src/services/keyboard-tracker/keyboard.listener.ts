@@ -5,6 +5,8 @@ import { getDateParts } from "../../shared/utils/dates";
 import { Express } from "express";
 import { KeyboardDB } from "./keyboard.types";
 
+import chalk from "chalk";
+
 const listener = new GlobalKeyboardListener();
 const inMemoryDB: KeyboardDB = keyboardDB.read();
 let saveTimeout: NodeJS.Timeout | null = null;
@@ -29,7 +31,7 @@ export function startKeyboardListener(app: Express) {
 		})();
 	});
 
-	console.log("Keyboard listener started");
+	console.log(chalk.green("Keyboard listener started"));
 }
 
 function updateInMemoryDB(appName: string, key: string, time: Date) {
