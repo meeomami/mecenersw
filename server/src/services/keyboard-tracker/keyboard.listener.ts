@@ -6,9 +6,7 @@ import { Express } from "express";
 import { KeyboardDB } from "./keyboard.types";
 
 const listener = new GlobalKeyboardListener();
-
-const inMemoryDB: KeyboardDB = {};
-
+const inMemoryDB: KeyboardDB = keyboardDB.read();
 let saveTimeout: NodeJS.Timeout | null = null;
 
 export function startKeyboardListener(app: Express) {
@@ -21,10 +19,11 @@ export function startKeyboardListener(app: Express) {
 			const win = await activeWin();
 			const appName = (win?.owner?.name === "Проводник" ? "Explorer" : win?.owner?.name) || "Explorer";
 			const key = e.name || "unknown";
+			const now = new Date();
 
-			updateInMemoryDB(appName, key);
+			updateInMemoryDB(appName, key, now);
 
-			io?.emit("keyboard-update", { appName, key, data: inMemoryDB });
+			io?.emit("keyboard-realtime", { appName, key, time: now });
 
 			scheduleSave();
 		})();
@@ -33,8 +32,8 @@ export function startKeyboardListener(app: Express) {
 	console.log("Keyboard listener started");
 }
 
-function updateInMemoryDB(appName: string, key: string) {
-	const { year, month, day } = getDateParts();
+function updateInMemoryDB(appName: string, key: string, time: Date) {
+	const { year, month, day } = getDateParts(time);
 
 	inMemoryDB[year] ??= {};
 	inMemoryDB[year][month] ??= {};
@@ -48,47 +47,15 @@ function updateInMemoryDB(appName: string, key: string) {
 		dayStats.push(appStats);
 	}
 
-	appStats.content[key] = (appStats.content[key] || 0) + 1;
+	if (!appStats.content[key]) appStats.content[key] = [];
+	appStats.content[key].push({ time });
 }
 
 function scheduleSave() {
 	if (saveTimeout) return;
 
 	saveTimeout = setTimeout(() => {
-		const diskData = keyboardDB.read();
-
-		mergeDB(diskData, inMemoryDB);
-
-		keyboardDB.write(diskData);
-
-		for (const y in inMemoryDB) delete inMemoryDB[y];
-
+		keyboardDB.write(inMemoryDB);
 		saveTimeout = null;
 	}, 5000);
-}
-
-function mergeDB(disk: KeyboardDB, memory: KeyboardDB) {
-	for (const year in memory) {
-		disk[year] ??= {};
-		for (const month in memory[year]) {
-			disk[year][month] ??= {};
-			for (const day in memory[year][month]) {
-				disk[year][month][day] ??= [];
-
-				const memDayStats = memory[year][month][day];
-				const diskDayStats = disk[year][month][day];
-
-				memDayStats.forEach((memApp) => {
-					const diskApp = diskDayStats.find((a) => a.appName === memApp.appName);
-					if (!diskApp) {
-						diskDayStats.push({ ...memApp, content: { ...memApp.content } });
-					} else {
-						for (const key in memApp.content) {
-							diskApp.content[key] = (diskApp.content[key] || 0) + memApp.content[key];
-						}
-					}
-				});
-			}
-		}
-	}
 }

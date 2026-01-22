@@ -1,5 +1,5 @@
-export function getDateParts() {
-	const now = new Date();
+export function getDateParts(time: Date | undefined) {
+	const now = time || new Date();
 
 	return {
 		year: String(now.getFullYear()),

@@ -1,24 +1,26 @@
-export type KeyName = string;
-
-export interface KeyStats {
-	[key: string]: number;
+export interface KeyEvent {
+	time: Date;
 }
 
 export interface AppStats {
 	appName: string;
-	content: KeyStats;
+	content: Record<string, KeyEvent[]>;
 }
 
-export type DayStats = AppStats[];
-
-export type MonthStats = {
-	[day: string]: DayStats;
-};
-
-export type YearStats = {
-	[month: string]: MonthStats;
-};
-
 export interface KeyboardDB {
-	[year: string]: YearStats;
+	[year: string]: {
+		[month: string]: {
+			[day: string]: AppStats[];
+		};
+	};
+}
+
+export interface KeyboardAnalytics {
+	totalKeys: number;
+	topKeys: { key: string; count: number }[];
+	topApps: { appName: string; count: number }[];
+	heatmapDay: Record<string, number>;
+	heatmapHour: Record<string, number>;
+	heatmapMinute: Record<string, number>;
+	keyDistribution: Record<string, number>;
 }

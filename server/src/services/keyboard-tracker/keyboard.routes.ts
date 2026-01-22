@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { getAllStats } from "./keyboard.controller";
+import { keyboardController } from "./keyboard.controller";
 
 export const keyboardRouter = Router();
 
-keyboardRouter.get("/stats", getAllStats);
+keyboardRouter.get("/stats", (req, res) => keyboardController.getAllStats(req, res));
+keyboardRouter.get("/analytics", (req, res) => keyboardController.getAnalytics(req, res));
